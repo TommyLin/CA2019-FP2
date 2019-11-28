@@ -24,3 +24,7 @@ checker() will be used to compare the default and the values calculated by you.
 You can currently use small.txt as input file, but this can change during tests.
 
 Length of each read will be fixed to 64 for tests also, so you can customize your CUDA kernels and shared memory according to it.
+
+You can use generator.py as below to generate your own smaller or larger datasets as below:
+
+python generator.py >> small.txt
