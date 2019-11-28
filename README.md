@@ -8,10 +8,13 @@ nvcc FMIndex.cu -o FMIndex
 ./FMIndex small.txt
 
 # Arrays that you need to fill and where final results should be stored:
-int **SA_Final_student;
-int **L_counts_student;
-char *L_student;
-int F_counts_student;
+SA_Final_student;
+
+L_counts_student;
+
+L_student;
+
+F_counts_student;
 
 # Correctness check
 checker() will be used to compare the default and the values calculated by you.
