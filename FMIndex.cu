@@ -38,23 +38,23 @@ char** inputReads(char *file_path, int *read_count, int *length){
     FILE *read_file = fopen(file_path, "r");
     int ch, lines=0;
     char **reads;
-    do                                                                                                 
-    {                                                                                                  
-        ch = fgetc(read_file);                                                                            
-        if (ch == '\n')                                                                                
-            lines++;                                                                                   
+    do
+    {
+        ch = fgetc(read_file);
+        if (ch == '\n')
+            lines++;
     } while (ch != EOF);
     rewind(read_file);
     reads=(char**)malloc(lines*sizeof(char*));
     *read_count = lines;
-    int i = 0;                                                                                         
-    size_t len = 0;                                                                                    
-    for(i = 0; i < lines; i++)                                                                         
+    int i = 0;
+    size_t len = 0;
+    for(i = 0; i < lines; i++)
     {
         reads[i] = NULL;
-        len = 0;                                                                                
+        len = 0;
         getline(&reads[i], &len, read_file);
-    }                                                                                                  
+    }
     fclose(read_file);
     int j=0;
     while(reads[0][j]!='\n')
@@ -140,9 +140,9 @@ int** makeFMIndex(char ***suffixes, int read_count, int read_length, int F_count
             SA_Final[i*read_length+j][1]=i;
         }
     }
-    
+
     char *temp=(char*)malloc(read_length*sizeof(char));
-    
+
     int **L_count=(int**)malloc(read_length*read_count*sizeof(int*));
     for(i=0;i<read_length*read_count;i++){
         L_count[i]=(int*)malloc(4*sizeof(int));
@@ -172,7 +172,7 @@ int** makeFMIndex(char ***suffixes, int read_count, int read_length, int F_count
     free(temp);
     char this_F = '$';
     j=0;
-    
+
     //Calculation of F_count's
     for(i=0;i<read_count*read_length;i++){
         int count=0;
@@ -184,7 +184,7 @@ int** makeFMIndex(char ***suffixes, int read_count, int read_length, int F_count
         if(temp_suffixes[i][0]=='T')
             break;
     }
-    
+
     //Calculation of L's and L_count's
     for(i=0;i<read_count*read_length;i++){
         char ch = temp_suffixes[i][read_length-1];
@@ -212,11 +212,11 @@ int main(int argc, char *argv[]){
 
     char **reads = inputReads(argv[1], &read_count, &read_length);//Input reads from file
     char ***suffixes=(char***)malloc(read_count*sizeof(char**));//Storage for read-wise suffixes
-        
+
     //-----------------------------Structures for correctness check----------------------------------------------
     L=(char*)malloc(read_count*read_length*sizeof(char*));//Final storage for last column of sorted suffixes
     //-----------------------------Structures for correctness check----------------------------------------------
-    
+
     //-----------Default implementation----------------
     //-----------Time capture start--------------------
     struct timeval  TimeValue_Start;
@@ -232,10 +232,10 @@ int main(int argc, char *argv[]){
     for(int i=0;i<read_count;i++){
         suffixes[i]=generateSuffixes(reads[i], read_length, i);
     }
-    
+
     //Calculate finl FM-Index
     L_counts = makeFMIndex(suffixes, read_count, read_length, F_counts, L);
-    
+
     gettimeofday(&TimeValue_Final, &TimeZone_Final);
     time_start = TimeValue_Start.tv_sec * 1000000 + TimeValue_Start.tv_usec;
     time_end = TimeValue_Final.tv_sec * 1000000 + TimeValue_Final.tv_usec;
@@ -255,7 +255,7 @@ int main(int argc, char *argv[]){
 
 
     //----------------For debug purpose only-----------------
-    //for(int i=0;i<read_count*read_length;i++)        
+    //for(int i=0;i<read_count*read_length;i++)
     //    cout<<L[i]<<"\t"<<SA_Final[i][0]<<","<<SA_Final[i][1]<<"\t"<<L_counts[i][0]<<","<<L_counts[i][1]<<","<<L_counts[i][2]<<","<<L_counts[i][3]<<endl;
     //--------------------------------------------------
 
