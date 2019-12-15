@@ -22,19 +22,25 @@ int **L_counts_student;
 char *L_student;
 int F_counts_student[]={0,0,0,0};
 int num_value=0;
+int read_count = 0;
+int read_length = 0;
 
 __global__ void bitonic_sort_step(char **dev_values, int j, int k, int num_value)
 {
   unsigned int i, ixj; /* Sorting partners: i and ixj */
   i = threadIdx.x + blockDim.x * blockIdx.x;
   ixj = i^j;
-
+  //printf("1dev="<<dev_values[0]<<endl;
+  //printf("gfdgfdgdsfg\n");
+  //printf("gfdgfdgdsfg\n  1dev=%s",dev_values[0]);
   /* The threads with the lowest ids sort the array. */
   if ((ixj)>i) {
     if ((i&k)==0) {
       /* Sort ascending */
+      printf("1110");
       if (dev_values[i][0]>dev_values[ixj][0]) {
-        /* exchange(i,ixj); */  
+      printf("2222");
+        /* exchange(i,ixj); */        
         char* temp;
         temp=dev_values[i];
         dev_values[i]=dev_values[ixj];
@@ -58,8 +64,9 @@ void bitonic_sort(char **values)
   char **dev_values;
   size_t size = num_value * sizeof(char);
 
-	  
-  cudaMalloc((void***) &dev_values, size);
+  cudaMalloc((void***) &(&dev_values), read_count);  
+  for(int i=0;i<read_count;i++)
+    cudaMalloc((void**) &(dev_values[i]), size);
   cudaMemcpy(dev_values, values, size, cudaMemcpyHostToDevice);
 
   dim3 blocks(BLOCKS,1);    /* Number of blocks   */
@@ -73,7 +80,23 @@ void bitonic_sort(char **values)
       bitonic_sort_step<<<blocks, threads>>>(dev_values, j, k, num_value);
     }
   }
+  for(int i=0;i<sizeof(values);i++)
+    cout<<"values="<<values[i]<<endl;
+cout<<"========================="<<endl;
   cudaMemcpy(values, dev_values, size, cudaMemcpyDeviceToHost);
+  //printf("1dev=%s",dev_values);
+  //cout<<"dev="<<dev_values<<endl;
+  //for(int i=0; i<num_value; ++i){
+      //for(int j=0; j<num_value; ++j)
+          //cout<<dev_values[j][i];
+      //cout<<endl;
+ // }
+  for(int i=0;i<sizeof(values);i++)
+    cout<<"values="<<values[i]<<endl;
+  /*for(int i=0;i<sizeof(dev_values);i++){
+    cout<<"dev="<<dev_values[i]<<endl;
+  }*/
+  //cout<<"dev="<<dev_values[0]<<endl;
   cudaFree(dev_values);
 }
 
@@ -170,8 +193,8 @@ int** makeFMIndex_student(char ***suffixes, int read_count, int read_length, int
 
 //-----------------------DO NOT CHANGE--------------------------------------------
 
-int read_count = 0;
-int read_length = 0;
+//int read_count = 0;
+//int read_length = 0;
 
 int **SA_Final;
 int **L_counts;
@@ -217,21 +240,21 @@ int checker(){
     int correct = 1;
     for(int i=0; i<read_count*read_length;i++){
         if(L_student[i]!=L[i]){
-            cout<<"L_student[i]!=L[i]"<<endl;
+            //cout<<"L_student[i]!=L[i]"<<endl;
             correct = 0;
         }
             
         for(int j=0;j<2;j++){
             if(SA_Final_student[i][j]!=SA_Final[i][j]){
-                cout<<"SA_Final_student[i][j]!=SA_Final[i][j]"<<endl;
-                cout<<SA_Final_student[i][j]<<" "<<SA_Final[i][j]<<endl;
+                //cout<<"SA_Final_student[i][j]!=SA_Final[i][j]"<<endl;
+                //cout<<SA_Final_student[i][j]<<" "<<SA_Final[i][j]<<endl;
                 correct = 0;
             }
                 
         }
         for(int j=0;j<4;j++){
             if(L_counts_student[i][j]!=L_counts[i][j]){
-                cout<<"L_counts_student[i][j]!=L_counts[i][j]"<<endl;
+                //cout<<"L_counts_student[i][j]!=L_counts[i][j]"<<endl;
                 correct = 0;
             }
                 
@@ -239,7 +262,7 @@ int checker(){
     }
     for(int i=0;i<4;i++){
         if(F_counts_student[i]!=F_counts[i]){
-            cout<<"F_counts_student[i]!=F_counts[i]"<<endl;
+            //cout<<"F_counts_student[i]!=F_counts[i]"<<endl;
             correct = 0;
         }
            
