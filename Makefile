@@ -2,7 +2,7 @@ all:
 	nvcc bitonic.cu FMIndex.cu -o FMIndex
 
 run:
-	@./FMIndex small.txt
+	@CUDA_VISIBLE_DEVICES=2 ./FMIndex small.txt
 
 clean:
 	@rm -fv FMIndex

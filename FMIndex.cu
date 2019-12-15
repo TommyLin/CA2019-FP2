@@ -5,7 +5,8 @@
 #include <cmath>
 #include <stdlib.h>
 #include<sys/time.h>
-
+#define BLOCKS 16
+#define THREADS 16
 using namespace std;
 
 void run_sort(void);
@@ -20,9 +21,9 @@ int **SA_Final_student;
 int **L_counts_student;
 char *L_student;
 int F_counts_student[]={0,0,0,0};
-int num_value;
+int num_value=0;
 
-__global__ void bitonic_sort_step(char *dev_values, int j, int k)
+__global__ void bitonic_sort_step(char **dev_values, int j, int k, int num_value)
 {
   unsigned int i, ixj; /* Sorting partners: i and ixj */
   i = threadIdx.x + blockDim.x * blockIdx.x;
@@ -32,31 +33,33 @@ __global__ void bitonic_sort_step(char *dev_values, int j, int k)
   if ((ixj)>i) {
     if ((i&k)==0) {
       /* Sort ascending */
-      if (dev_values[i]>dev_values[ixj]) {
-        /* exchange(i,ixj); */
-        float temp = dev_values[i];
-        dev_values[i] = dev_values[ixj];
-        dev_values[ixj] = temp;
+      if (dev_values[i][0]>dev_values[ixj][0]) {
+        /* exchange(i,ixj); */  
+        char* temp;
+        temp=dev_values[i];
+        dev_values[i]=dev_values[ixj];
+        dev_values[ixj]=temp;
       }
     }
     if ((i&k)!=0) {
       /* Sort descending */
-      if (dev_values[i]<dev_values[ixj]) {
+      if (dev_values[i][0]<dev_values[ixj][0]) {
         /* exchange(i,ixj); */
-        float temp = dev_values[i];
-        dev_values[i] = dev_values[ixj];
-        dev_values[ixj] = temp;
+        char* temp;
+        temp=dev_values[i];
+        dev_values[i]=dev_values[ixj];
+        dev_values[ixj]=temp;
       }
     }
   }
 }
-void bitonic_sort(char *values)
+void bitonic_sort(char **values)
 {
-  char *dev_values;
+  char **dev_values;
   size_t size = num_value * sizeof(char);
 
 	  
-  cudaMalloc((void**) &dev_values, size);
+  cudaMalloc((void***) &dev_values, size);
   cudaMemcpy(dev_values, values, size, cudaMemcpyHostToDevice);
 
   dim3 blocks(BLOCKS,1);    /* Number of blocks   */
@@ -67,7 +70,7 @@ void bitonic_sort(char *values)
   for (k = 2; k <= num_value; k <<= 1) {
     /* Minor step */
     for (j=k>>1; j>0; j=j>>1) {
-      bitonic_sort_step<<<blocks, threads>>>(dev_values, j, k);
+      bitonic_sort_step<<<blocks, threads>>>(dev_values, j, k, num_value);
     }
   }
   cudaMemcpy(values, dev_values, size, cudaMemcpyDeviceToHost);
@@ -189,7 +192,6 @@ char** inputReads(char *file_path, int *read_count, int *length){
     } while (ch != EOF);
     rewind(read_file);
     reads=(char**)malloc(lines*sizeof(char*));
-	my_read.my_string = (char**)malloc(lines*sizeof(char*));
     *read_count = lines;
     int i = 0;                                                                                         
     size_t len = 0;                                                                                    
@@ -206,7 +208,7 @@ char** inputReads(char *file_path, int *read_count, int *length){
     *length = j+1;
     for(i=0;i<lines;i++)
         reads[i][j]='$';
-	int temp = (int)log2(*length)
+	int temp = (int)log2(*length);
 	num_value = pow(2,temp);
     return reads;
 }
