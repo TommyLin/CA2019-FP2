@@ -1,5 +1,5 @@
 all:
-	nvcc FMIndex.cu -o FMIndex
+	nvcc bitonic.cu FMIndex.cu -o FMIndex
 
 run:
 	@./FMIndex small.txt

@@ -8,6 +8,9 @@
 
 using namespace std;
 
+void run_sort(void);
+int compSuffixes(char *suffix1, char *suffix2, int length);
+
 //-----------------------DO NOT CHANGE NAMES, ONLY MODIFY VALUES--------------------------------------------
 
 //Final Values that will be compared for correctness
@@ -17,6 +20,92 @@ int **SA_Final_student;
 int **L_counts_student;
 char *L_student;
 int F_counts_student[]={0,0,0,0};
+
+//Calculates the final FM-Index
+int** makeFMIndex_student(char ***suffixes, int read_count, int read_length, int F_count[], char *L_student){
+    int i, j;
+
+    SA_Final_student=(int**)malloc(read_count*read_length*sizeof(int*));
+    for(i=0;i<read_count*read_length;i++)
+        SA_Final_student[i]=(int*)malloc(2*sizeof(int));
+
+    //Temporary storage for collecting together all suffixes
+    char **temp_suffixes=(char**)malloc(read_count*read_length*sizeof(char*));
+
+    //Initalization of temporary storage
+    for(i=0;i<read_count;i++){
+        for(j=0;j<read_length;j++){
+            temp_suffixes[i*read_length+j]=(char*)malloc(read_length*sizeof(char));
+            memcpy(&temp_suffixes[i*read_length+j], &suffixes[i][j],read_length*sizeof(char));
+            SA_Final_student[i*read_length+j][0]=j;
+            SA_Final_student[i*read_length+j][1]=i;
+        }
+    }
+    
+    char *temp=(char*)malloc(read_length*sizeof(char));
+    
+    int **L_count=(int**)malloc(read_length*read_count*sizeof(int*));
+    for(i=0;i<read_length*read_count;i++){
+        L_count[i]=(int*)malloc(4*sizeof(int));
+        for(j=0;j<4;j++){
+            L_count[i][j]=0;
+        }
+    }
+
+    //run_sort();
+    //Focus on improving this for evaluation purpose
+    //Sorting of suffixes
+    for(i=0;i<read_count*read_length-1;i++){
+        for(j=0;j<read_count*read_length-i-1;j++){
+            if(compSuffixes(temp_suffixes[j], temp_suffixes[j+1], read_length)>0){
+                memcpy(temp, temp_suffixes[j], read_length*sizeof(char));
+                memcpy(temp_suffixes[j], temp_suffixes[j+1], read_length*sizeof(char));
+                memcpy(temp_suffixes[j+1], temp, read_length*sizeof(char));
+                int temp_int = SA_Final_student[j][0];
+                SA_Final_student[j][0]=SA_Final_student[j+1][0];
+                SA_Final_student[j+1][0]=temp_int;
+                temp_int = SA_Final_student[j][1];
+                SA_Final_student[j][1]=SA_Final_student[j+1][1];
+                SA_Final_student[j+1][1]=temp_int;
+            }
+        }
+    }
+
+    free(temp);
+    char this_F = '$';
+    j=0;
+    
+    //Calculation of F_count's
+    for(i=0;i<read_count*read_length;i++){
+        int count=0;
+        while(temp_suffixes[i][0]==this_F){
+            count++;i++;
+        }
+        F_count[j++]=j==0?count:count+1;
+        this_F = temp_suffixes[i][0];
+        if(temp_suffixes[i][0]=='T')
+            break;
+    }
+    
+    //Calculation of L_student's and L_count's
+    for(i=0;i<read_count*read_length;i++){
+        char ch = temp_suffixes[i][read_length-1];
+        L_student[i]=ch;
+        if(i>0){
+            for(int k=0;k<4;k++)
+                L_count[i][k]=L_count[i-1][k];
+        }
+        if(ch=='A')
+            L_count[i][0]++;
+        else if(ch=='C')
+            L_count[i][1]++;
+        else if(ch=='G')
+            L_count[i][2]++;
+        else if(ch=='T')
+            L_count[i][3]++;
+    }
+    return L_count;
+}
 //--------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------------------------------
@@ -69,20 +158,33 @@ char** inputReads(char *file_path, int *read_count, int *length){
 int checker(){
     int correct = 1;
     for(int i=0; i<read_count*read_length;i++){
-        if(L_student[i]!=L[i])
+        if(L_student[i]!=L[i]){
+            cout<<"L_student[i]!=L[i]"<<endl;
             correct = 0;
+        }
+            
         for(int j=0;j<2;j++){
-            if(SA_Final_student[i][j]!=SA_Final[i][j])
+            if(SA_Final_student[i][j]!=SA_Final[i][j]){
+                cout<<"SA_Final_student[i][j]!=SA_Final[i][j]"<<endl;
+                cout<<SA_Final_student[i][j]<<" "<<SA_Final[i][j]<<endl;
                 correct = 0;
+            }
+                
         }
         for(int j=0;j<4;j++){
-            if(L_counts_student[i][j]!=L_counts[i][j])
+            if(L_counts_student[i][j]!=L_counts[i][j]){
+                cout<<"L_counts_student[i][j]!=L_counts[i][j]"<<endl;
                 correct = 0;
+            }
+                
         }
     }
     for(int i=0;i<4;i++){
-        if(F_counts_student[i]!=F_counts[i])
+        if(F_counts_student[i]!=F_counts[i]){
+            cout<<"F_counts_student[i]!=F_counts[i]"<<endl;
             correct = 0;
+        }
+           
     }
     return correct;
 }
@@ -151,6 +253,7 @@ int** makeFMIndex(char ***suffixes, int read_count, int read_length, int F_count
         }
     }
 
+    
     //Focus on improving this for evaluation purpose
     //Sorting of suffixes
     for(i=0;i<read_count*read_length-1;i++){
@@ -215,6 +318,7 @@ int main(int argc, char *argv[]){
         
     //-----------------------------Structures for correctness check----------------------------------------------
     L=(char*)malloc(read_count*read_length*sizeof(char*));//Final storage for last column of sorted suffixes
+    L_student=(char*)malloc(read_count*read_length*sizeof(char*));//Final storage for last column of sorted suffixes
     //-----------------------------Structures for correctness check----------------------------------------------
     
     //-----------Default implementation----------------
@@ -244,16 +348,25 @@ int main(int argc, char *argv[]){
     //--------------------------------------------------
 
     //-----------Your implementations------------------
-    gettimeofday(&TimeValue_Final, &TimeZone_Final);
+    gettimeofday(&TimeValue_Start, &TimeZone_Start);
     time_start = TimeValue_Start.tv_sec * 1000000 + TimeValue_Start.tv_usec;
     //-----------Call your functions here--------------------
 
+    //Generate read-wise suffixes
+    for(int i=0;i<read_count;i++){
+        suffixes[i]=generateSuffixes(reads[i], read_length, i);
+    }
+
+    //Calculate finl FM-Index
+    L_counts_student = makeFMIndex_student(suffixes, read_count, read_length, F_counts_student, L_student);
+
     //-----------Call your functions here--------------------
+    gettimeofday(&TimeValue_Final, &TimeZone_Final);
     time_end = TimeValue_Final.tv_sec * 1000000 + TimeValue_Final.tv_usec;
     time_overhead_student = (time_end - time_start)/1000000.0;
     //--------------------------------------------------
 
-
+ 
     //----------------For debug purpose only-----------------
     //for(int i=0;i<read_count*read_length;i++)        
     //    cout<<L[i]<<"\t"<<SA_Final[i][0]<<","<<SA_Final[i][1]<<"\t"<<L_counts[i][0]<<","<<L_counts[i][1]<<","<<L_counts[i][2]<<","<<L_counts[i][3]<<endl;
@@ -261,8 +374,12 @@ int main(int argc, char *argv[]){
 
     //---------------Correction check and speedup calculation----------------------
     float speedup=0.0;
-    //if(checker()==1)
-    //    speedup = time_overhead_default/time_overhead_student;
+    if(checker()==1)
+        speedup = time_overhead_default/time_overhead_student;
+    else
+        cout<<"X"<<endl;
+    cout<<"time_overhead_default="<<time_overhead_default<<endl;
+    cout<<"time_overhead_student="<<time_overhead_student<<endl;
     cout<<"Speedup="<<speedup<<endl;
     //-----------------------------------------------------------------------------
     return 0;
