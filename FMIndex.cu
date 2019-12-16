@@ -82,7 +82,7 @@ void bitonic_sort(char **values)
   }
   for(int i=0;i<sizeof(values);i++)
     cout<<"values="<<values[i]<<endl;
-cout<<"========================="<<endl;
+  cout<<"========================="<<endl;
   cudaMemcpy(values, dev_values, size, cudaMemcpyDeviceToHost);
   //printf("1dev=%s",dev_values);
   //cout<<"dev="<<dev_values<<endl;
