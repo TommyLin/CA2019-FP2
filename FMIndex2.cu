@@ -526,7 +526,6 @@ int main(int argc, char *argv[]){
     time_overhead_student = (time_end - time_start)/1000000.0;
     //--------------------------------------------------
 
-
     //----------------For debug purpose only-----------------
     //for(int i=0;i<read_count*read_length;i++)
     //    cout<<L[i]<<"\t"<<SA_Final[i][0]<<","<<SA_Final[i][1]<<"\t"<<L_counts[i][0]<<","<<L_counts[i][1]<<","<<L_counts[i][2]<<","<<L_counts[i][3]<<endl;
