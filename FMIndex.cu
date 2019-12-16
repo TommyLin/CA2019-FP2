@@ -25,60 +25,70 @@ int num_value=0;
 int read_count = 0;
 int read_length = 0;
 
-__global__ void bitonic_sort_step(char **dev_values, int j, int k, int num_value)
-{
-  unsigned int i, ixj; /* Sorting partners: i and ixj */
-  i = threadIdx.x + blockDim.x * blockIdx.x;
-  ixj = i^j;
-  //printf("1dev="<<dev_values[0]<<endl;
-  //printf("gfdgfdgdsfg\n");
-  //printf("gfdgfdgdsfg\n  1dev=%s",dev_values[0]);
-  /* The threads with the lowest ids sort the array. */
-  if ((ixj)>i) {
-    if ((i&k)==0) {
-      /* Sort ascending */
-      printf("1110");
-      if (dev_values[i][0]>dev_values[ixj][0]) {
-      printf("2222");
-        /* exchange(i,ixj); */        
-        char* temp;
-        temp=dev_values[i];
-        dev_values[i]=dev_values[ixj];
-        dev_values[ixj]=temp;
-      }
+__global__ void bitonic_sort_step(char **dev_values, int j, int k, int num_value){
+    unsigned int i, ixj; /* Sorting partners: i and ixj */
+    i = threadIdx.x + blockDim.x * blockIdx.x;
+    ixj = i^j;
+    //printf("1dev="<<dev_values[0]<<endl;
+    //printf("gfdgfdgdsfg\n");
+    //printf("gfdgfdgdsfg\n  1dev=%s",dev_values[0]);
+    /* The threads with the lowest ids sort the array. */
+    if ((ixj)>i) {
+        if ((i&k)==0) {
+            /* Sort ascending */
+            printf("1110");
+            for(int m=0;m<num_value;m++){
+                if (dev_values[i][m]>dev_values[ixj][m]) {
+                    printf("2222");
+                    /* exchange(i,ixj); */        
+                    char* temp;
+                    temp=dev_values[i];
+                    dev_values[i]=dev_values[ixj];
+                    dev_values[ixj]=temp;
+                    break;
+                }
+            } 
+        }
+        if ((i&k)!=0) {
+            /* Sort descending */
+            for(int m=0;m<num_value;m++){
+                if (dev_values[i][m]<dev_values[ixj][m]) {
+                    printf("2222");
+                    /* exchange(i,ixj); */        
+                    char* temp;
+                    temp=dev_values[i];
+                    dev_values[i]=dev_values[ixj];
+                    dev_values[ixj]=temp;
+                    break;
+                }
+            }
+        }
     }
-    if ((i&k)!=0) {
-      /* Sort descending */
-      if (dev_values[i][0]<dev_values[ixj][0]) {
-        /* exchange(i,ixj); */
-        char* temp;
-        temp=dev_values[i];
-        dev_values[i]=dev_values[ixj];
-        dev_values[ixj]=temp;
-      }
-    }
-  }
 }
-void bitonic_sort(char **values)
-{
-  char **dev_values;
-  size_t size = num_value * sizeof(char);
+void bitonic_sort(char **values){
+    char **dev_values;
+    size_t size = num_value * sizeof(char);
 
-  cudaMalloc((void***) &(&dev_values), read_count);  
-  for(int i=0;i<read_count;i++)
-    cudaMalloc((void**) &(dev_values[i]), size);
-  cudaMemcpy(dev_values, values, size, cudaMemcpyHostToDevice);
-
-  dim3 blocks(BLOCKS,1);    /* Number of blocks   */
-  dim3 threads(THREADS,1);  /* Number of threads  */
-
-  int j, k;
-  /* Major step */
-  for (k = 2; k <= num_value; k <<= 1) {
-    /* Minor step */
-    for (j=k>>1; j>0; j=j>>1) {
-      bitonic_sort_step<<<blocks, threads>>>(dev_values, j, k, num_value);
+    cudaMalloc((void***) &dev_values, read_count);  
+    cudaMemcpy(dev_values, values, size, cudaMemcpyHostToDevice);
+    for(int i=0;i<read_count;i++){
+        cudaMalloc((void**) &(dev_values[i]), size);
+        cudaMemcpy(dev_values[i], values[i], size, cudaMemcpyHostToDevice);
     }
+
+
+    dim3 blocks(BLOCKS,1);    /* Number of blocks   */
+    dim3 threads(THREADS,1);  /* Number of threads  */
+
+    int j, k;
+    /* Major step */
+    for (k = 2; k <= num_value; k <<= 1) {
+        /* Minor step */
+        for (j=k>>1; j>0; j=j>>1) {
+        bitonic_sort_step<<<blocks, threads>>>(dev_values, j, k, num_value);
+        }
+    }
+<<<<<<< HEAD
   }
   for(int i=0;i<sizeof(values);i++)
     cout<<"values="<<values[i]<<endl;
@@ -98,6 +108,15 @@ void bitonic_sort(char **values)
   }*/
   //cout<<"dev="<<dev_values[0]<<endl;
   cudaFree(dev_values);
+=======
+    for(int i=0;i<sizeof(values);i++)
+        cout<<"values="<<values[i]<<endl;
+    cout<<"========================="<<endl;
+    cudaMemcpy(values, dev_values, size, cudaMemcpyDeviceToHost);
+    for(int i=0;i<sizeof(values);i++)
+        cout<<"values="<<values[i]<<endl;
+    cudaFree(dev_values);
+>>>>>>> 7418d3a441adee75c498344c34d2a845d2585ee1
 }
 
 
@@ -231,7 +250,7 @@ char** inputReads(char *file_path, int *read_count, int *length){
     *length = j+1;
     for(i=0;i<lines;i++)
         reads[i][j]='$';
-	int temp = (int)log2(*length);
+	int temp = log2((float)*length);
 	num_value = pow(2,temp);
     return reads;
 }
