@@ -5,8 +5,8 @@
 #include <cmath>
 #include <stdlib.h>
 #include<sys/time.h>
-#define BLOCKS 16
-#define THREADS 16
+#define BLOCKS 1
+#define THREADS 256
 using namespace std;
 
 void run_sort(void);
@@ -25,91 +25,109 @@ int num_value=0;
 int read_count = 0;
 int read_length = 0;
 
-__global__ void bitonic_sort_step(char *dev_values, int j, int k, int num_value, int sizeof_values){
+__global__ void bitonic_sort_step(char *dev_values, char* result, int j, int k, int num_value, int read_length){
     //printf("gfdgfdgdsfg\n");
+    int flag = 0;
 	unsigned int i, ixj; /* Sorting partners: i and ixj */
     i = threadIdx.x + blockDim.x * blockIdx.x;
     ixj = i^j;
+    
     //printf("enter GPU2\n");
-    //printf("sizeof_values = %d\n",sizeof_values);
-    for(int i=0;i<num_value;i++){
-        dev_values[i*num_value+num_value-1]='\0';
-        //if(i==3){
-            printf("%d\tdev_values=%s\n",i,&dev_values[i*num_value]);
-            //printf("========== i=%d ==========\n",i);
-        //}
-    }
-
-    //printf("num_value=%d \n",num_value);
-    //printf("1dev="<<dev_values[0]<<endl;
-    //printf("gfdgfdgdsfg\n");
-    //printf("gfdgfdgdsfg\n  1dev=%s",dev_values[0]);
-    /* The threads with the lowest ids sort the array. */
-    /*if ((ixj)>i) {
-        if ((i&k)==0) {
-            // Sort ascending //
-            printf("1110");
-            for(int m=0;m<num_value;m++){
-                if (dev_values[i]>dev_values[ixj]) {
-                    printf("2222");
-                    // exchange(i,ixj); //
-                    char* temp;
-                    temp=dev_values[i];
-                    dev_values[i]=dev_values[ixj];
-                    dev_values[ixj]=temp;
-                    break;
-                }
-            }
-        }
-        if ((i&k)!=0) {
-            // Sort descending
-            for(int m=0;m<num_value;m++){
-                if (dev_values[i][m]<dev_values[ixj][m]) {
-                    printf("2222");
-                    // exchange(i,ixj);
-                    char* temp;
-                    temp=dev_values[i];
-                    dev_values[i]=dev_values[ixj];
-                    dev_values[ixj]=temp;
-                    break;
-                }
-            }
+    //printf("sizeof_values = %d\n",  );
+    //printf("original string=");
+    //for(int k=0;k<num_value*num_value;k++)
+        //printf("%c", dev_values[k]);
+    //if(i==1) printf("original string:%s\n", dev_values[0]);
+    //if(i==2)
+        //for(int kk=0; kk<num_value*read_length; k = k+1) 
+            //printf("%c", dev_values[kk]);
+    //printf("original string=");
+    /*for(int kk=0;kk<num_value;kk++){
+        
+        //dev_values[(kk+1)*read_length-1]='\0';
+        if((kk==0 || kk==1||kk==2||kk==3||kk==4)&& i==1){
+            printf("%d\tdev_values=%s\n",k,&dev_values[kk*read_length]);
+            //printf("========== i=%d ==========\n",k);
         }
     }*/
+    /* The threads with the lowest ids sort the array. */
+    flag = 0;
+    int fir, sec;
+    fir = 0;
+    sec = 32;
+    //printf("%d and %d\n", i, ixj);
+    if(i==0)printf("%c and %c\n", dev_values[fir*65], dev_values[sec*65]);
+    for(int l=0;l<read_length;l++){
+        //if(i*read_length+l==0 && ixj*read_length+l==64*65)printf("%d, %d, %c and %c\n", i*read_length+l, ixj*read_length+l, dev_values[i*read_length+l], dev_values[ixj*read_length+l]);
+        if(dev_values[i*read_length+l]>dev_values[ixj*read_length+l]){
+            if(i==0&&i*read_length+l==fir*65 && ixj*read_length+l==sec*65)printf(">>>>>>>>>>>>>>>>>>\n");
+            flag = 1;
+            break;
+        }
+        else if(dev_values[i*read_length+l]<dev_values[ixj*read_length+l]){
+            if(i==0&&i*read_length+l==fir*65 && ixj*read_length+l==sec*65)printf("<<<<<<<<<<<<<<<<<<<<\n");
+            flag = -1;
+            break;
+        }
+        if(i==0&&i*read_length+l==fir*65 && ixj*read_length+l==sec*65)printf("=========================\n");
+        flag = 0;
+    }
+    if ((ixj)>i) {
+        if ((i&k)==0) {
+            // Sort ascending //
+            //printf("1110");
+            //for(int m=0;m<num_value;m++){
+
+                if (flag==1) {
+                    //printf("2222");
+                    // exchange(i,ixj); //      
+                    char* temp = new char[read_length];
+                    for(int kk=0;kk<read_length;kk++){
+                        temp[kk] = dev_values[i*read_length+kk];
+                        dev_values[i*read_length+kk] = dev_values[ixj*read_length+kk];
+                        dev_values[ixj*read_length+kk] = temp[kk];
+                    }
+                    //break;
+                }
+            //} 
+        }
+        if ((i&k)!=0) {
+            // Sort descending 
+            for(int m=0;m<num_value;m++){
+                if (flag==-1) {
+                    //printf("2222");
+                    // exchange(i,ixj);         
+                    char* temp = new char[read_length];
+                    for(int kk=0;kk<read_length;kk++){
+                        temp[kk] = dev_values[i*read_length+kk];
+                        dev_values[i*read_length+kk] = dev_values[ixj*read_length+kk];
+                        dev_values[ixj*read_length+kk] = temp[kk];
+                    }
+                }
+            }
+        }
+    }
 }
 void bitonic_sort(char **values, int read_length){
     char *dev_values;
     size_t size = num_value * sizeof(char);
     char *temp;
     char* temp_char = new char[read_length];
-    //temp = (char*)malloc(read_length*size);
-    temp = (char*)malloc(num_value*size);
+    char* result;
+    temp = (char*)malloc(read_length*size);
     cout<<"read_length="<<read_length<<endl;
     for(int i=0;i<read_length;i++){
         temp_char[i]='T';
     }
     cout<<"num_value="<<num_value<<endl;
-    for(int i=0;i<read_length;i++){
-		memcpy(&temp[i*num_value],values[i],read_length*sizeof(char));
-        if(read_length<num_value){
+    for(int i=0;i<num_value;i++){
+        if(i<read_length)
+            memcpy(&temp[i*read_length],values[i],read_length*sizeof(char));
+        else{
             cout<<"into if "<<endl;
-            memcpy(&temp[i*num_value+read_length],temp_char,(num_value-read_length)*sizeof(char));
+            memcpy(&temp[i*read_length],temp_char,read_length*sizeof(char));   
         }
     }
-
-
-    /*for(int i=0;i<num_value;i++){
-        if(i<read_length){
-            cout<<"into if "<<endl;
-            memcpy(&temp[i*num_value],values[i],size);
-        }
-
-        else{
-            cout<<"into else"<<endl;
-            memcpy(&temp[i*num_value],temp_char,size);
-
-        }
-    }*/
     cout<<"==============================="<<endl;
     cout<<"temp_char="<<temp_char<<endl;
     cout<<"==============================="<<endl;
@@ -119,23 +137,12 @@ void bitonic_sort(char **values, int read_length){
         cout<<"values="<<values[i]<<endl;
 	cout<<"========================="<<endl;
     fprintf(stderr,"enter bitonic sort\n");
-    cudaMalloc((void**) &dev_values, size*num_value);
-    //if(i<read_length)
-    //    cudaMemcpy(dev_values, temp, read_length*size, cudaMemcpyHostToDevice);
-    //else
-    //    cudaMemcpy(values[i], temp_char, size, cudaMemcpyDeviceToHost);
-
-
+    cudaMalloc((void**) &dev_values, size*read_length);
+    cout<<"dfsfsdfsdf"<<size<<num_value<<endl;
+    cudaMalloc((void**) &result, size*num_value);
+    
+    
     cudaMemcpy(dev_values, temp, read_length*size, cudaMemcpyHostToDevice);
-    //for(int i=0;i<read_length;i++){
-        //dev_values[i] = (char*)malloc(num_value*sizeof(char));
-        //cudaMalloc((void**) &(dev_values[i]), size);
-		//printf("values address = %x\n",&values[i]);
-        //cudaMemcpy(values[i], values[i], size, cudaMemcpyHostToDevice);
-        //cudaMemcpy(&dev_values[i*num_value], values[i], size, cudaMemcpyHostToDevice);
-        //cout<<"values="<<values[i]<<endl;
-        //printf("i=%d , num_value=%d , size=%d \n",i,num_value,size);
-    //}
     fprintf(stderr,"finish pushing data into device\n");
 
     dim3 blocks(BLOCKS,1);    /* Number of blocks   */
@@ -144,25 +151,30 @@ void bitonic_sort(char **values, int read_length){
     int j, k;
     /* Major step */
     for (k = 2; k <= num_value; k <<= 1) {
-        /* Minor step */
+        //* Minor step */
         for (j=k>>1; j>0; j=j>>1) {
-			//fprintf(stderr,"using GPU\n");
-			bitonic_sort_step<<<blocks, threads>>>(dev_values, j, k, num_value,read_length);
-			//printf("finishdjslkfjldskf\n");
+			fprintf(stderr,"before entering GPU\n");
+			bitonic_sort_step<<<1, 1>>>(dev_values,result, j, k, num_value,read_length);
+			fprintf(stderr,"leaving GPU\n");
         }
     }
-    for(int i=0;i<read_length;i++){
-        cudaMemcpy(values[i], &dev_values[i*num_value], size, cudaMemcpyDeviceToHost);
-    }
-	 //for(int i=0;i<read_count;i++){
-        //dev_values[i] = (char*)malloc(num_value*sizeof(char));
-        //cudaMalloc((void**) &(dev_values[i]), size);
-		//printf("values address = %x\n",&values[i]);
-        //cudaMemcpy(values[0], dev_values, size, cudaMemcpyDeviceToHost);
+   
+		
+    //for(int i=0;i<read_length;i++){
+        //cudaMemcpy(values[i], &dev_values[i*read_length], read_length*sizeof(char), cudaMemcpyDeviceToHost);       
     //}
-
-    /*for(int i=0;i<read_length;i++)
-        cout<<"i="<<i<<"values=\t\t"<<values[i]<<endl;*/
+    cudaMemcpy(temp, dev_values, read_length*size, cudaMemcpyDeviceToHost);
+    
+    cout<<"begin teeeeeeeeeeeeeeeeeeeeeeeeeeeeeemp"<<endl;
+    for(int i=0;i<read_length;i++){
+        memcpy(values[i],&temp[i*read_length],read_length*sizeof(char));
+        cout<<values[i]<<endl;
+    }  
+    
+    cout<<"tttttttttttttttteeeeeeeeeeemmmmmmmmmmmmmmmpppppppppppppppppppppp"<<endl;
+    cout<<temp<<endl;
+    //for(int i=0;i<read_length;i++)
+        //cout<<"i="<<i<<"values=\t\t"<<values[i]<<endl;
     cudaFree(dev_values);
 }
 
@@ -181,10 +193,10 @@ int** makeFMIndex_student(char ***suffixes, int read_count, int read_length, int
     cout<<"======================="<<endl;
     cout<<"num_value = "<<num_value<<endl;
     cout<<"======================="<<endl;
-
+    
     SA_Final_student=(int**)malloc(read_count*read_length*sizeof(int*));
     for(i=0;i<read_count*read_length;i++){
-
+        
         SA_Final_student[i]=(int*)malloc(2*sizeof(int));
     }
     //Temporary storage for collecting together all suffixes
@@ -202,7 +214,7 @@ int** makeFMIndex_student(char ***suffixes, int read_count, int read_length, int
     cout<<"read_count = "<<read_count<<endl;
     cout<<"read_length = "<<read_length<<endl;
     char *temp=(char*)malloc(read_length*sizeof(char));
-
+    
     int **L_count=(int**)malloc(read_length*read_count*sizeof(int*));
     for(i=0;i<read_length*read_count;i++){
         L_count[i]=(int*)malloc(4*sizeof(int));
@@ -233,7 +245,7 @@ int** makeFMIndex_student(char ***suffixes, int read_count, int read_length, int
     free(temp);
     char this_F = '$';
     j=0;
-
+    
     //Calculation of F_count's
     for(i=0;i<read_count*read_length;i++){
         int count=0;
@@ -245,7 +257,7 @@ int** makeFMIndex_student(char ***suffixes, int read_count, int read_length, int
         if(temp_suffixes[i][0]=='T')
             break;
     }
-
+    
     //Calculation of L_student's and L_count's
     for(i=0;i<read_count*read_length;i++){
         char ch = temp_suffixes[i][read_length-1];
@@ -286,23 +298,23 @@ char** inputReads(char *file_path, int *read_count, int *length){
     FILE *read_file = fopen(file_path, "r");
     int ch, lines=0;
     char **reads;
-    do
-    {
-        ch = fgetc(read_file);
-        if (ch == '\n')
-            lines++;
+    do                                                                                                 
+    {                                                                                                  
+        ch = fgetc(read_file);                                                                            
+        if (ch == '\n')                                                                                
+            lines++;                                                                                   
     } while (ch != EOF);
     rewind(read_file);
     reads=(char**)malloc(lines*sizeof(char*));
     *read_count = lines;
-    int i = 0;
-    size_t len = 0;
-    for(i = 0; i < lines; i++)
+    int i = 0;                                                                                         
+    size_t len = 0;                                                                                    
+    for(i = 0; i < lines; i++)                                                                         
     {
         reads[i] = NULL;
-        len = 0;
+        len = 0;                                                                                
         getline(&reads[i], &len, read_file);
-    }
+    }                                                                                                  
     fclose(read_file);
     int j=0;
     while(reads[0][j]!='\n')
@@ -322,21 +334,21 @@ int checker(){
             //cout<<"L_student[i]!=L[i]"<<endl;
             correct = 0;
         }
-
+            
         for(int j=0;j<2;j++){
             if(SA_Final_student[i][j]!=SA_Final[i][j]){
                 //cout<<"SA_Final_student[i][j]!=SA_Final[i][j]"<<endl;
                 //cout<<SA_Final_student[i][j]<<" "<<SA_Final[i][j]<<endl;
                 correct = 0;
             }
-
+                
         }
         for(int j=0;j<4;j++){
             if(L_counts_student[i][j]!=L_counts[i][j]){
                 //cout<<"L_counts_student[i][j]!=L_counts[i][j]"<<endl;
                 correct = 0;
             }
-
+                
         }
     }
     for(int i=0;i<4;i++){
@@ -344,7 +356,7 @@ int checker(){
             //cout<<"F_counts_student[i]!=F_counts[i]"<<endl;
             correct = 0;
         }
-
+           
     }
     return correct;
 }
@@ -402,9 +414,9 @@ int** makeFMIndex(char ***suffixes, int read_count, int read_length, int F_count
             SA_Final[i*read_length+j][1]=i;
         }
     }
-
+    
     char *temp=(char*)malloc(read_length*sizeof(char));
-
+    
     int **L_count=(int**)malloc(read_length*read_count*sizeof(int*));
     for(i=0;i<read_length*read_count;i++){
         L_count[i]=(int*)malloc(4*sizeof(int));
@@ -413,7 +425,7 @@ int** makeFMIndex(char ***suffixes, int read_count, int read_length, int F_count
         }
     }
 
-
+    
     //Focus on improving this for evaluation purpose
     //Sorting of suffixes
     for(i=0;i<read_count*read_length-1;i++){
@@ -435,7 +447,7 @@ int** makeFMIndex(char ***suffixes, int read_count, int read_length, int F_count
     free(temp);
     char this_F = '$';
     j=0;
-
+    
     //Calculation of F_count's
     for(i=0;i<read_count*read_length;i++){
         int count=0;
@@ -447,7 +459,7 @@ int** makeFMIndex(char ***suffixes, int read_count, int read_length, int F_count
         if(temp_suffixes[i][0]=='T')
             break;
     }
-
+    
     //Calculation of L's and L_count's
     for(i=0;i<read_count*read_length;i++){
         char ch = temp_suffixes[i][read_length-1];
@@ -475,12 +487,12 @@ int main(int argc, char *argv[]){
 
     char **reads = inputReads(argv[1], &read_count, &read_length);//Input reads from file
     char ***suffixes=(char***)malloc(read_count*sizeof(char**));//Storage for read-wise suffixes
-
+        
     //-----------------------------Structures for correctness check----------------------------------------------
     L=(char*)malloc(read_count*read_length*sizeof(char*));//Final storage for last column of sorted suffixes
     L_student=(char*)malloc(read_count*read_length*sizeof(char*));//Final storage for last column of sorted suffixes
     //-----------------------------Structures for correctness check----------------------------------------------
-
+    
     //-----------Default implementation----------------
     //-----------Time capture start--------------------
     struct timeval  TimeValue_Start;
@@ -496,10 +508,10 @@ int main(int argc, char *argv[]){
     for(int i=0;i<read_count;i++){
         suffixes[i]=generateSuffixes(reads[i], read_length, i);
     }
-
+    
     //Calculate finl FM-Index
     L_counts = makeFMIndex(suffixes, read_count, read_length, F_counts, L);
-
+    
     gettimeofday(&TimeValue_Final, &TimeZone_Final);
     time_start = TimeValue_Start.tv_sec * 1000000 + TimeValue_Start.tv_usec;
     time_end = TimeValue_Final.tv_sec * 1000000 + TimeValue_Final.tv_usec;
@@ -526,8 +538,9 @@ int main(int argc, char *argv[]){
     time_overhead_student = (time_end - time_start)/1000000.0;
     //--------------------------------------------------
 
+ 
     //----------------For debug purpose only-----------------
-    //for(int i=0;i<read_count*read_length;i++)
+    //for(int i=0;i<read_count*read_length;i++)        
     //    cout<<L[i]<<"\t"<<SA_Final[i][0]<<","<<SA_Final[i][1]<<"\t"<<L_counts[i][0]<<","<<L_counts[i][1]<<","<<L_counts[i][2]<<","<<L_counts[i][3]<<endl;
     //--------------------------------------------------
 
